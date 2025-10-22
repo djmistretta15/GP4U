@@ -1,0 +1,89 @@
+{
+  "broker_fee_percent": 1.0,
+  "refresh_interval_seconds": 60,
+  
+  "networks": {
+    "render": {
+      "enabled": true,
+      "api_url": "https://api.render.com",
+      "api_key": "",
+      "name": "Render Network",
+      "commission_percent": 25.0
+    },
+    "akash": {
+      "enabled": true,
+      "api_url": "https://api.akash.network",
+      "api_key": "",
+      "name": "Akash Network",
+      "commission_percent": 20.0
+    },
+    "ionet": {
+      "enabled": true,
+      "api_url": "https://api.io.net",
+      "api_key": "",
+      "name": "io.net",
+      "commission_percent": 15.0
+    },
+    "vastai": {
+      "enabled": true,
+      "api_url": "https://console.vast.ai/api/v0",
+      "api_key": "",
+      "name": "Vast.ai",
+      "commission_percent": 30.0
+    }
+  },
+  
+  "gpu_specs": {
+    "rtx_4090": {
+      "vram_gb": 24,
+      "cuda_cores": 16384,
+      "base_price_per_hour": 2.50
+    },
+    "rtx_3090": {
+      "vram_gb": 24,
+      "cuda_cores": 10496,
+      "base_price_per_hour": 1.80
+    },
+    "a100": {
+      "vram_gb": 80,
+      "cuda_cores": 6912,
+      "base_price_per_hour": 4.00
+    },
+    "h100": {
+      "vram_gb": 80,
+      "cuda_cores": 16896,
+      "base_price_per_hour": 6.50
+    },
+    "v100": {
+      "vram_gb": 32,
+      "cuda_cores": 5120,
+      "base_price_per_hour": 2.00
+    },
+    "a6000": {
+      "vram_gb": 48,
+      "cuda_cores": 10752,
+      "base_price_per_hour": 2.20
+    }
+  },
+  
+  "arbitrage": {
+    "enabled": true,
+    "min_savings_percent": 15.0,
+    "alert_threshold_percent": 25.0
+  },
+  
+  "database": {
+    "path": "data/gp4u.db"
+  },
+  
+  "logging": {
+    "level": "INFO",
+    "file": "logs/gp4u.log"
+  },
+  
+  "alerts": {
+    "enabled": false,
+    "discord_webhook": "",
+    "slack_webhook": ""
+  }
+}
