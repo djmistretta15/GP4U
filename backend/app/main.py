@@ -72,14 +72,19 @@ async def root():
     }
 
 
-# TODO: Include routers when they're created
-# from app.api import auth, gpus, reservations, clusters, wallet, arbitrage
-# app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["auth"])
-# app.include_router(gpus.router, prefix=f"{settings.API_V1_PREFIX}/gpus", tags=["gpus"])
-# app.include_router(reservations.router, prefix=f"{settings.API_V1_PREFIX}/reservations", tags=["reservations"])
-# app.include_router(clusters.router, prefix=f"{settings.API_V1_PREFIX}/clusters", tags=["clusters"])
-# app.include_router(wallet.router, prefix=f"{settings.API_V1_PREFIX}/wallet", tags=["wallet"])
-# app.include_router(arbitrage.router, prefix=f"{settings.API_V1_PREFIX}/arbitrage", tags=["arbitrage"])
+# Include API routers
+from app.api import auth, gpus, arbitrage, providers
+
+app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Authentication"])
+app.include_router(gpus.router, prefix=f"{settings.API_V1_PREFIX}/gpus", tags=["GPUs"])
+app.include_router(arbitrage.router, prefix=f"{settings.API_V1_PREFIX}/arbitrage", tags=["Arbitrage"])
+app.include_router(providers.router, prefix=f"{settings.API_V1_PREFIX}/providers", tags=["Providers"])
+
+# TODO: Add remaining routers
+# from app.api import reservations, clusters, wallet
+# app.include_router(reservations.router, prefix=f"{settings.API_V1_PREFIX}/reservations", tags=["Reservations"])
+# app.include_router(clusters.router, prefix=f"{settings.API_V1_PREFIX}/clusters", tags=["Clusters"])
+# app.include_router(wallet.router, prefix=f"{settings.API_V1_PREFIX}/wallet", tags=["Wallet"])
 
 
 if __name__ == "__main__":
