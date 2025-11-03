@@ -4,10 +4,12 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Zap, Lock, Mail, AlertCircle, Loader, CheckCircle } from 'lucide-react';
 
-export default function Signup({ onNavigate }) {
+export default function Signup() {
+  const navigate = useNavigate();
   const { signup } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,7 +44,7 @@ export default function Signup({ onNavigate }) {
 
     if (result.success) {
       // Navigate to marketplace
-      onNavigate('marketplace');
+      navigate('/marketplace');
     } else {
       setError(result.error);
     }
@@ -210,12 +212,12 @@ export default function Signup({ onNavigate }) {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Already have an account?{' '}
-              <button
-                onClick={() => onNavigate('login')}
+              <Link
+                to="/login"
                 className="text-blue-500 hover:text-blue-600 font-medium"
               >
                 Log in
-              </button>
+              </Link>
             </p>
           </div>
         </div>
