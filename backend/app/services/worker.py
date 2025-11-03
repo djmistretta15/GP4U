@@ -110,11 +110,41 @@ def cleanup_old_data():
     return run_async(_cleanup())
 
 
+@celery_app.task(name='update_reservation_statuses')
+def update_reservation_statuses():
+    """
+    Update reservation statuses based on time
+
+    Activates pending reservations that have started
+    Completes active reservations that have ended
+    """
+    async def _update():
+        async with AsyncSessionLocal() as db:
+            from app.services.reservation_service import ReservationService
+
+            service = ReservationService(db)
+
+            activated = await service.activate_pending_reservations()
+            completed = await service.complete_finished_reservations()
+
+            return {
+                'activated': activated,
+                'completed': completed,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+
+    return run_async(_update())
+
+
 # Celery Beat Schedule (Periodic Tasks)
 celery_app.conf.beat_schedule = {
     'sync-providers-every-30-seconds': {
         'task': 'sync_all_providers',
         'schedule': 30.0,  # Every 30 seconds
+    },
+    'update-reservations-every-minute': {
+        'task': 'update_reservation_statuses',
+        'schedule': 60.0,  # Every minute
     },
     'cleanup-old-data-daily': {
         'task': 'cleanup_old_data',

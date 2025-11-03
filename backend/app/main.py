@@ -73,17 +73,17 @@ async def root():
 
 
 # Include API routers
-from app.api import auth, gpus, arbitrage, providers
+from app.api import auth, gpus, arbitrage, providers, reservations, clusters
 
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Authentication"])
 app.include_router(gpus.router, prefix=f"{settings.API_V1_PREFIX}/gpus", tags=["GPUs"])
 app.include_router(arbitrage.router, prefix=f"{settings.API_V1_PREFIX}/arbitrage", tags=["Arbitrage"])
 app.include_router(providers.router, prefix=f"{settings.API_V1_PREFIX}/providers", tags=["Providers"])
+app.include_router(reservations.router, prefix=f"{settings.API_V1_PREFIX}/reservations", tags=["Reservations"])
+app.include_router(clusters.router, prefix=f"{settings.API_V1_PREFIX}/clusters", tags=["Clusters"])
 
-# TODO: Add remaining routers
-# from app.api import reservations, clusters, wallet
-# app.include_router(reservations.router, prefix=f"{settings.API_V1_PREFIX}/reservations", tags=["Reservations"])
-# app.include_router(clusters.router, prefix=f"{settings.API_V1_PREFIX}/clusters", tags=["Clusters"])
+# TODO: Add wallet router
+# from app.api import wallet
 # app.include_router(wallet.router, prefix=f"{settings.API_V1_PREFIX}/wallet", tags=["Wallet"])
 
 
