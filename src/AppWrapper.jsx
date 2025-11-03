@@ -7,11 +7,11 @@
 import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import { useToast } from './context/ToastContext';
+import Marketplace from './pages/Marketplace';
 import WalletManager from './components/WalletManager';
 import MyReservations from './components/MyReservations';
 import MyClusters from './components/MyClusters';
 import ClusterWizard from './components/ClusterWizard';
-import ReservationBooking from './components/ReservationBooking';
 
 export default function AppWrapper() {
   const { user, logout } = useAuth();
@@ -19,19 +19,9 @@ export default function AppWrapper() {
   const [currentPage, setCurrentPage] = useState('marketplace');
   const [darkMode, setDarkMode] = useState(false);
   const [showClusterWizard, setShowClusterWizard] = useState(false);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [selectedGpuId, setSelectedGpuId] = useState(null);
-
-  // Simple integrated app for now
-  // TODO: Integrate with existing App.jsx marketplace UI
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-  };
-
-  const handleBookGPU = (gpuId) => {
-    setSelectedGpuId(gpuId);
-    setShowBookingModal(true);
   };
 
   const handleCreateCluster = () => {
@@ -42,11 +32,6 @@ export default function AppWrapper() {
     toast.success(`Cluster "${cluster.job_name}" created successfully!`);
     setShowClusterWizard(false);
     setCurrentPage('clusters');
-  };
-
-  const handleBookingClose = () => {
-    setShowBookingModal(false);
-    setSelectedGpuId(null);
   };
 
   return (
@@ -122,29 +107,7 @@ export default function AppWrapper() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         {currentPage === 'marketplace' && (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">GPU Marketplace</h2>
-              <div className="flex space-x-4">
-                <button
-                  onClick={handleCreateCluster}
-                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg"
-                >
-                  Create Cluster
-                </button>
-              </div>
-            </div>
-
-            {/* Placeholder - Integrate existing App.jsx marketplace here */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
-              <p className="text-gray-600 dark:text-gray-400">
-                GPU Marketplace - Integrate existing App.jsx components here
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                The existing 905-line App.jsx with full marketplace UI will be integrated in the next update.
-              </p>
-            </div>
-          </div>
+          <Marketplace darkMode={darkMode} onCreateCluster={handleCreateCluster} />
         )}
 
         {currentPage === 'reservations' && <MyReservations darkMode={darkMode} />}
@@ -159,19 +122,6 @@ export default function AppWrapper() {
             <ClusterWizard
               onClose={() => setShowClusterWizard(false)}
               onSuccess={handleClusterSuccess}
-              darkMode={darkMode}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Booking Modal */}
-      {showBookingModal && selectedGpuId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-3xl w-full my-8">
-            <ReservationBooking
-              gpuId={selectedGpuId}
-              onClose={handleBookingClose}
               darkMode={darkMode}
             />
           </div>
