@@ -190,6 +190,21 @@ class ReservationService:
                 detail="Reservation is already cancelled"
             )
 
+        # Process refund if reservation was already paid (ACTIVE status)
+        if reservation.status == ReservationStatus.ACTIVE:
+            from app.services.wallet_service import WalletService
+            wallet_service = WalletService(self.db)
+
+            await wallet_service.refund_reservation(
+                user_id=user_id,
+                reservation_id=reservation_id,
+                amount=reservation.total_cost
+            )
+
+            logger.info(
+                f"Refunded {reservation.total_cost} USDC for cancelled reservation {reservation_id}"
+            )
+
         # Update status
         reservation.status = ReservationStatus.CANCELLED
         await self.db.commit()
@@ -420,10 +435,13 @@ class ReservationService:
         Activate reservations that have reached their start time
 
         This should be called by a background worker periodically
+        Processes payment when activating reservation
 
         Returns:
             Number of reservations activated
         """
+        from app.services.wallet_service import WalletService, InsufficientFundsError
+
         result = await self.db.execute(
             select(Reservation).where(
                 and_(
@@ -433,14 +451,42 @@ class ReservationService:
             )
         )
         pending_reservations = result.scalars().all()
+        activated_count = 0
+
+        wallet_service = WalletService(self.db)
 
         for reservation in pending_reservations:
-            reservation.status = ReservationStatus.ACTIVE
+            try:
+                # Process payment
+                await wallet_service.process_reservation_payment(
+                    user_id=reservation.user_id,
+                    reservation_id=reservation.id,
+                    amount=reservation.total_cost
+                )
+
+                # Activate reservation
+                reservation.status = ReservationStatus.ACTIVE
+                activated_count += 1
+
+                logger.info(
+                    f"Activated reservation {reservation.id} and processed payment of "
+                    f"{reservation.total_cost} USDC"
+                )
+            except InsufficientFundsError as e:
+                # Cancel reservation if insufficient funds
+                reservation.status = ReservationStatus.CANCELLED
+                logger.warning(
+                    f"Cancelled reservation {reservation.id} due to insufficient funds: {e}"
+                )
+            except Exception as e:
+                logger.error(
+                    f"Failed to activate reservation {reservation.id}: {e}"
+                )
 
         await self.db.commit()
 
-        logger.info(f"Activated {len(pending_reservations)} reservations")
-        return len(pending_reservations)
+        logger.info(f"Activated {activated_count} reservations")
+        return activated_count
 
     async def complete_finished_reservations(self) -> int:
         """

@@ -3,10 +3,12 @@ from .arbitrage_engine import ArbitrageEngine
 from .reservation_service import ReservationService
 from .provider_aggregator import ProviderAggregator
 from .cluster_orchestrator import ClusterOrchestrator
+from .wallet_service import WalletService
 
 __all__ = [
     "ArbitrageEngine",
     "ReservationService",
     "ProviderAggregator",
-    "ClusterOrchestrator"
+    "ClusterOrchestrator",
+    "WalletService"
 ]

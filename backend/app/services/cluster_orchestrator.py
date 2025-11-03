@@ -108,6 +108,17 @@ class ClusterOrchestrator:
             deadline_hours
         )
 
+        # Step 4.5: Check user has sufficient funds
+        from app.services.wallet_service import WalletService
+        wallet_service = WalletService(self.db)
+        user_balance = await wallet_service.get_balance(user_id)
+
+        if user_balance < total_cost:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=f"Insufficient funds: balance={user_balance} USDC, required={total_cost} USDC"
+            )
+
         # Step 5: Create cluster in database
         cluster = Cluster(
             user_id=user_id,
@@ -164,12 +175,32 @@ class ClusterOrchestrator:
                 detail="Can only start pending clusters"
             )
 
-        cluster.status = ClusterStatus.ACTIVE
-        await self.db.commit()
-        await self.db.refresh(cluster)
+        # Process payment
+        from app.services.wallet_service import WalletService, InsufficientFundsError
+        wallet_service = WalletService(self.db)
 
-        logger.info(f"Started cluster {cluster_id}")
-        return cluster
+        try:
+            await wallet_service.process_cluster_payment(
+                user_id=user_id,
+                cluster_id=cluster_id,
+                amount=cluster.total_cost
+            )
+
+            cluster.status = ClusterStatus.ACTIVE
+            await self.db.commit()
+            await self.db.refresh(cluster)
+
+            logger.info(
+                f"Started cluster {cluster_id} and processed payment of "
+                f"{cluster.total_cost} USDC"
+            )
+            return cluster
+
+        except InsufficientFundsError as e:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=str(e)
+            )
 
     async def stop_cluster(
         self,
@@ -208,6 +239,22 @@ class ClusterOrchestrator:
 
         await self.db.commit()
         await self.db.refresh(cluster)
+
+        # Distribute earnings to GPU providers if successful
+        if success:
+            from app.services.wallet_service import WalletService
+            wallet_service = WalletService(self.db)
+
+            try:
+                transactions = await wallet_service.distribute_cluster_earnings(cluster_id)
+                logger.info(
+                    f"Distributed earnings to {len(transactions)} GPU providers "
+                    f"for cluster {cluster_id}"
+                )
+            except Exception as e:
+                logger.error(
+                    f"Failed to distribute earnings for cluster {cluster_id}: {e}"
+                )
 
         logger.info(f"Stopped cluster {cluster_id}, success: {success}")
         return cluster

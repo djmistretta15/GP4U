@@ -131,35 +131,54 @@ class Cluster(BaseModel):
 
 
 # Wallet Schemas
-class WalletCreate(BaseModel):
-    currency: str = "USDC"
-
-
-class Wallet(BaseModel):
+class WalletResponse(BaseModel):
     id: UUID
     user_id: UUID
-    address: Optional[str] = None
-    balance: Decimal
-    currency: str
+    balance_usdc: Decimal
+    total_earned: Decimal
+    total_spent: Decimal
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class TransactionCreate(BaseModel):
-    amount: Decimal
-    type: TransactionType
+class DepositRequest(BaseModel):
+    amount: Decimal = Field(gt=0, description="Amount to deposit (must be positive)")
+    transaction_hash: Optional[str] = Field(None, description="Blockchain transaction hash")
+    metadata: Optional[dict] = Field(default_factory=dict)
 
 
-class Transaction(BaseModel):
+class WithdrawalRequest(BaseModel):
+    amount: Decimal = Field(gt=0, description="Amount to withdraw (must be positive)")
+    destination_address: Optional[str] = Field(None, description="Crypto wallet address")
+    metadata: Optional[dict] = Field(default_factory=dict)
+
+
+class TransactionResponse(BaseModel):
     id: UUID
     wallet_id: UUID
-    amount: Decimal
     type: TransactionType
-    status: TransactionStatus
-    tx_hash: Optional[str] = None
+    amount: Decimal
+    balance_after: Decimal
+    description: str
+    transaction_hash: Optional[str] = None
+    reservation_id: Optional[UUID] = None
+    cluster_id: Optional[UUID] = None
+    metadata: dict
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SpendingAnalyticsResponse(BaseModel):
+    period_days: int
+    total_spent: Decimal
+    total_transactions: int
+    breakdown: dict
+    current_balance: Decimal
+    lifetime_spent: Decimal
+    lifetime_earned: Decimal
 
 
 # Arbitrage Schemas
