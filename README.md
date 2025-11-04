@@ -18,6 +18,7 @@ GP4U is a full-stack web application that aggregates GPU offerings from multiple
 - 📅 **Time-Block Reservations** - Book GPUs by the hour with calendar view
 - 🎯 **Cluster Mode** - Create multi-GPU clusters with DPP algorithm
 - 💳 **USDC Wallet** - Deposit, withdraw, and track spending
+- 🔗 **Web3 Integration** - Connect MetaMask for real blockchain transactions
 - 📊 **Analytics** - Transaction history and spending insights
 - 🌙 **Dark Mode** - Full theme support
 
@@ -29,6 +30,8 @@ GP4U is a full-stack web application that aggregates GPU offerings from multiple
 
 ### **Technical Features**
 - 🔐 JWT Authentication with bcrypt password hashing
+- ⛓️ Web3 wallet connectivity (MetaMask, WalletConnect)
+- 💎 Real USDC blockchain transactions (Ethereum & Polygon)
 - 🚀 Real-time data sync every 30 seconds
 - ♻️ Background workers for automation
 - 📱 Responsive design (mobile-first)
@@ -55,6 +58,13 @@ GP4U is a full-stack web application that aggregates GPU offerings from multiple
 - **Tailwind CSS** - Utility-first styling
 - **Vite** - Build tool
 - **Lucide React** - Icon library
+
+### **Web3 Integration**
+- **Ethers.js v6** - Ethereum library for blockchain interactions
+- **MetaMask** - Web3 wallet connectivity
+- **USDC (ERC-20)** - Stablecoin for payments
+- **Multi-Chain Support** - Ethereum Mainnet & Polygon PoS
+- **Smart Contract Integration** - Real blockchain transactions
 
 ### **DevOps**
 - **Docker & Docker Compose** - Containerization
@@ -129,6 +139,71 @@ npm run dev
 
 # Access at http://localhost:5173
 ```
+
+---
+
+## 🔗 Web3 Integration Setup
+
+GP4U supports real blockchain transactions using MetaMask and USDC. Follow these steps to enable Web3 features:
+
+### **1. Install MetaMask**
+- Install [MetaMask browser extension](https://metamask.io/)
+- Create a wallet or import an existing one
+- Ensure you have some ETH or MATIC for gas fees
+
+### **2. Supported Networks**
+GP4U works on the following networks:
+
+| Network | Chain ID | USDC Contract Address |
+|---------|----------|-----------------------|
+| **Ethereum Mainnet** | 1 | `0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48` |
+| **Polygon PoS** | 137 | `0x3c499c542cef5e3811e1192ce70d8cc03d5c3359` |
+| Sepolia Testnet | 11155111 | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` |
+| Mumbai Testnet | 80001 | `0x0FA8781a83E46826621b3BC094Ea2A0212e71B23` |
+
+### **3. Get Test USDC (Testnets)**
+For development and testing:
+- **Sepolia**: Use [Circle Faucet](https://faucet.circle.com/) for test USDC
+- **Mumbai**: Bridge test USDC from Sepolia using [Polygon Bridge](https://wallet.polygon.technology/bridge)
+
+### **4. Connect Your Wallet**
+1. Open GP4U application
+2. Navigate to **Wallet** page
+3. Click **"Connect Wallet"** button
+4. Approve MetaMask connection request
+5. Your blockchain balance will display automatically
+
+### **5. Making Deposits**
+Once connected:
+1. Ensure you're on Ethereum or Polygon network
+2. Make sure you have USDC in your wallet
+3. Enter deposit amount
+4. Click **"Deposit via Blockchain"**
+5. Approve the transaction in MetaMask (2 transactions: approve + transfer)
+6. Wait for blockchain confirmation (~15 seconds on Polygon, ~1 minute on Ethereum)
+7. Your GP4U balance updates automatically
+
+### **6. Making Withdrawals**
+1. Enter withdrawal amount
+2. Optionally specify destination address (defaults to connected wallet)
+3. Click **"Withdraw Funds"**
+4. Platform processes withdrawal and sends USDC to your address
+
+### **Troubleshooting**
+- **"Please install MetaMask"**: Install the browser extension and refresh
+- **"Unsupported network"**: Switch to Ethereum or Polygon in MetaMask
+- **"Insufficient USDC"**: Buy USDC on an exchange or use test faucets
+- **"Transaction failed"**: Check you have enough ETH/MATIC for gas fees
+- **Transaction stuck**: Increase gas price in MetaMask settings
+
+### **Gas Fees**
+- **Ethereum**: ~$5-20 per transaction (varies with network congestion)
+- **Polygon**: ~$0.01-0.10 per transaction (recommended for frequent transactions)
+
+### **Hybrid Mode**
+GP4U works in hybrid mode:
+- **With Web3 connected**: Real blockchain transactions
+- **Without Web3**: Simulated transactions for testing/demo purposes
 
 ---
 
