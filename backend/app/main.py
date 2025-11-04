@@ -2,12 +2,21 @@
 GP4U FastAPI Application
 Main entry point for the API server
 """
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
+from app.services.provider_init import initialize_providers, shutdown_providers
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO if not settings.DEBUG else logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -17,18 +26,39 @@ async def lifespan(app: FastAPI):
     Handles startup and shutdown tasks
     """
     # Startup
-    print("🚀 GP4U API Starting...")
-    print(f"📋 Version: {settings.VERSION}")
-    print(f"🔧 Debug Mode: {settings.DEBUG}")
-    await init_db()
-    print("✅ Database initialized")
+    logger.info("🚀 GP4U API Starting...")
+    logger.info(f"📋 Version: {settings.VERSION}")
+    logger.info(f"🔧 Debug Mode: {settings.DEBUG}")
 
+    # Initialize database
+    await init_db()
+    logger.info("✅ Database initialized")
+
+    # Initialize providers (Phase 7)
+    try:
+        providers = await initialize_providers()
+        logger.info(f"✅ Initialized {len(providers)} GPU providers")
+    except Exception as e:
+        logger.error(f"⚠️ Provider initialization failed: {e}")
+        logger.warning("Continuing without providers - they can be initialized via API")
+
+    logger.info("🎉 GP4U API Ready!")
     yield
 
     # Shutdown
-    print("🛑 Shutting down GP4U API...")
+    logger.info("🛑 Shutting down GP4U API...")
+
+    # Shutdown providers
+    try:
+        await shutdown_providers()
+        logger.info("✅ Providers shut down gracefully")
+    except Exception as e:
+        logger.error(f"⚠️ Provider shutdown error: {e}")
+
+    # Close database
     await close_db()
-    print("✅ Database connections closed")
+    logger.info("✅ Database connections closed")
+    logger.info("👋 GP4U API Stopped")
 
 
 # Create FastAPI app
@@ -74,6 +104,7 @@ async def root():
 
 # Include API routers
 from app.api import auth, gpus, arbitrage, providers, reservations, clusters, wallets
+from app.api.v1 import provider_health
 
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Authentication"])
 app.include_router(gpus.router, prefix=f"{settings.API_V1_PREFIX}/gpus", tags=["GPUs"])
@@ -82,6 +113,7 @@ app.include_router(providers.router, prefix=f"{settings.API_V1_PREFIX}/providers
 app.include_router(reservations.router, prefix=f"{settings.API_V1_PREFIX}/reservations", tags=["Reservations"])
 app.include_router(clusters.router, prefix=f"{settings.API_V1_PREFIX}/clusters", tags=["Clusters"])
 app.include_router(wallets.router, prefix=f"{settings.API_V1_PREFIX}/wallets", tags=["Wallets"])
+app.include_router(provider_health.router, prefix=f"{settings.API_V1_PREFIX}/provider-health", tags=["Provider Health"])
 
 
 if __name__ == "__main__":
