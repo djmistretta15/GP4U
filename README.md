@@ -8,6 +8,13 @@ GP4U is a full-stack web application that aggregates GPU offerings from multiple
 [![Frontend](https://img.shields.io/badge/Frontend-React-61DAFB.svg)](https://reactjs.org/)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL-336791.svg)](https://www.postgresql.org/)
 
+## 📚 Documentation
+
+- **[README.md](README.md)** - Project overview and quick start
+- **[STATUS.md](STATUS.md)** - Detailed project status and progress
+- **[PROVIDER_SETUP.md](PROVIDER_SETUP.md)** - Provider configuration and monitoring guide
+- **[TESTING.md](TESTING.md)** - Complete testing guide and best practices
+
 ---
 
 ## ✨ Features
