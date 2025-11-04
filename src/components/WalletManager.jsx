@@ -5,13 +5,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { walletAPI } from '../services/api';
+import { useWeb3 } from '../context/Web3Context';
+import { useToast } from '../context/ToastContext';
 import {
   Wallet, DollarSign, TrendingUp, TrendingDown, Clock,
   ArrowUpCircle, ArrowDownCircle, RefreshCw, AlertCircle,
-  CheckCircle, Loader, Calendar, Filter
+  CheckCircle, Loader, Calendar, Filter, Link as LinkIcon,
+  ExternalLink
 } from 'lucide-react';
 
 export default function WalletManager({ darkMode }) {
+  // Web3 integration
+  const web3 = useWeb3();
+  const toast = useToast();
+
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -24,6 +31,8 @@ export default function WalletManager({ darkMode }) {
   const [amount, setAmount] = useState('');
   const [destinationAddress, setDestinationAddress] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [txHash, setTxHash] = useState('');
+  const [waitingForConfirmation, setWaitingForConfirmation] = useState(false);
 
   // Transaction filters
   const [transactionFilter, setTransactionFilter] = useState(null);
@@ -77,17 +86,60 @@ export default function WalletManager({ darkMode }) {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setTxHash('');
     setProcessing(true);
 
     try {
-      await walletAPI.deposit(amount);
-      setSuccess(`Successfully deposited $${amount} USDC`);
-      setAmount('');
-      await loadWalletData();
+      // If Web3 is connected, use real blockchain transaction
+      if (web3.isConnected) {
+        if (!web3.isSupportedNetwork()) {
+          throw new Error('Please switch to Ethereum or Polygon network');
+        }
+
+        // Check if user has enough USDC
+        const balance = parseFloat(web3.usdcBalance);
+        if (balance < parseFloat(amount)) {
+          throw new Error(`Insufficient USDC balance. You have ${balance.toFixed(2)} USDC`);
+        }
+
+        toast.info('Please confirm the transaction in your wallet...');
+
+        // Platform address (in production, this would be your smart contract or treasury address)
+        const platformAddress = wallet?.wallet_address || '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb';
+
+        // Initiate blockchain deposit
+        const tx = await web3.depositUSDC(amount, platformAddress);
+        setTxHash(tx.hash);
+        toast.info('Transaction submitted! Waiting for confirmation...');
+        setWaitingForConfirmation(true);
+
+        // Wait for transaction confirmation
+        await tx.wait();
+        setWaitingForConfirmation(false);
+
+        // Register deposit with backend
+        await walletAPI.deposit(amount, tx.hash);
+
+        setSuccess(`Successfully deposited $${amount} USDC`);
+        toast.success(`Deposited ${amount} USDC successfully!`);
+        setAmount('');
+        await loadWalletData();
+      } else {
+        // Fallback to simulated deposit for MVP testing
+        await walletAPI.deposit(amount);
+        setSuccess(`Successfully deposited $${amount} USDC (simulated)`);
+        toast.success(`Deposited ${amount} USDC (simulated)`);
+        setAmount('');
+        await loadWalletData();
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Deposit failed');
+      console.error('Deposit error:', err);
+      const errorMessage = err.message || err.response?.data?.detail || 'Deposit failed';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setProcessing(false);
+      setWaitingForConfirmation(false);
     }
   };
 
@@ -95,16 +147,40 @@ export default function WalletManager({ darkMode }) {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setTxHash('');
     setProcessing(true);
 
     try {
-      await walletAPI.withdraw(amount, destinationAddress);
-      setSuccess(`Successfully withdrew $${amount} USDC`);
+      // Use Web3 wallet address if no destination specified
+      const targetAddress = destinationAddress || web3.account;
+
+      if (!targetAddress) {
+        throw new Error('Please specify a destination address or connect your Web3 wallet');
+      }
+
+      // Validate address format
+      if (!targetAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+        throw new Error('Invalid Ethereum address format');
+      }
+
+      // Process withdrawal through backend
+      const response = await walletAPI.withdraw(amount, targetAddress);
+
+      setSuccess(`Successfully withdrew $${amount} USDC to ${targetAddress.substring(0, 6)}...${targetAddress.substring(targetAddress.length - 4)}`);
+      toast.success(`Withdrew ${amount} USDC successfully!`);
+
+      if (response.transaction_hash) {
+        setTxHash(response.transaction_hash);
+      }
+
       setAmount('');
       setDestinationAddress('');
       await loadWalletData();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Withdrawal failed');
+      console.error('Withdrawal error:', err);
+      const errorMessage = err.message || err.response?.data?.detail || 'Withdrawal failed';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setProcessing(false);
     }
@@ -146,6 +222,78 @@ export default function WalletManager({ darkMode }) {
 
   return (
     <div className="space-y-6">
+      {/* Web3 Wallet Connection */}
+      {web3.isWalletAvailable && (
+        <div className={`${cardBg} rounded-xl p-6 border ${borderColor}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className={`text-lg font-bold ${textColor} mb-2`}>Blockchain Wallet</h3>
+              {web3.isConnected ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Connected: <span className="font-mono text-blue-500">{web3.formatAddress(web3.account)}</span>
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Network: <span className="font-medium">{web3.networkName}</span>
+                  </p>
+                  <div className="flex items-center space-x-4">
+                    <div>
+                      <p className="text-xs text-gray-500">USDC Balance</p>
+                      <p className={`text-lg font-bold ${textColor}`}>
+                        {parseFloat(web3.usdcBalance).toFixed(2)} USDC
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Native Balance</p>
+                      <p className={`text-lg font-bold ${textColor}`}>
+                        {parseFloat(web3.nativeBalance).toFixed(4)} {web3.chainId === 137 ? 'MATIC' : 'ETH'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Connect your MetaMask wallet for real blockchain transactions</p>
+              )}
+            </div>
+            <div>
+              {web3.isConnected ? (
+                <button
+                  onClick={web3.disconnectWallet}
+                  className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                >
+                  Disconnect
+                </button>
+              ) : (
+                <button
+                  onClick={web3.connectWallet}
+                  disabled={web3.isLoading}
+                  className="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {web3.isLoading ? (
+                    <>
+                      <Loader className="animate-spin" size={16} />
+                      <span>Connecting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <LinkIcon size={16} />
+                      <span>Connect Wallet</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+          {!web3.isSupportedNetwork() && web3.isConnected && (
+            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                ⚠️ Please switch to Ethereum or Polygon network for USDC transactions
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Balance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Current Balance */}
@@ -262,6 +410,25 @@ export default function WalletManager({ darkMode }) {
           {/* Deposit Tab */}
           {activeTab === 'deposit' && (
             <form onSubmit={handleDeposit} className="space-y-4">
+              {/* Web3 Connection Status */}
+              {web3.isWalletAvailable && (
+                <div className={`p-4 rounded-lg ${web3.isConnected ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'}`}>
+                  <p className={`text-sm ${web3.isConnected ? 'text-green-700 dark:text-green-300' : 'text-yellow-700 dark:text-yellow-300'}`}>
+                    {web3.isConnected ? (
+                      <>
+                        ✓ Web3 wallet connected. Deposits will use real blockchain transactions.
+                        <br />
+                        <span className="text-xs">Available: {parseFloat(web3.usdcBalance).toFixed(2)} USDC on {web3.networkName}</span>
+                      </>
+                    ) : (
+                      <>
+                        ⚠️ Web3 wallet not connected. Connect your wallet above for real blockchain deposits, or use simulated mode for testing.
+                      </>
+                    )}
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className={`block text-sm font-medium ${textColor} mb-2`}>
                   Deposit Amount (USDC)
@@ -270,35 +437,62 @@ export default function WalletManager({ darkMode }) {
                   type="number"
                   step="0.01"
                   min="0.01"
+                  max={web3.isConnected ? web3.usdcBalance : undefined}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   placeholder="0.00"
                   required
                 />
+                {web3.isConnected && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Maximum: {parseFloat(web3.usdcBalance).toFixed(2)} USDC
+                  </p>
+                )}
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  <strong>Note:</strong> In production, this will connect to your Web3 wallet for USDC deposits.
-                  For MVP testing, deposits are simulated.
-                </p>
-              </div>
+              {/* Transaction Hash Display */}
+              {txHash && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                    <strong>Transaction Hash:</strong>
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <code className="text-xs font-mono break-all">{txHash}</code>
+                    {web3.getExplorerUrl(txHash) && (
+                      <a
+                        href={web3.getExplorerUrl(txHash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 text-blue-500 hover:text-blue-600"
+                      >
+                        <ExternalLink size={16} />
+                      </a>
+                    )}
+                  </div>
+                  {waitingForConfirmation && (
+                    <p className="text-xs text-gray-500 mt-2 flex items-center space-x-1">
+                      <Loader className="animate-spin" size={12} />
+                      <span>Waiting for blockchain confirmation...</span>
+                    </p>
+                  )}
+                </div>
+              )}
 
               <button
                 type="submit"
-                disabled={processing || !amount}
+                disabled={processing || !amount || (web3.isConnected && !web3.isSupportedNetwork())}
                 className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
-                {processing ? (
+                {processing || waitingForConfirmation ? (
                   <>
                     <Loader className="animate-spin" size={20} />
-                    <span>Processing...</span>
+                    <span>{waitingForConfirmation ? 'Confirming...' : 'Processing...'}</span>
                   </>
                 ) : (
                   <>
                     <ArrowDownCircle size={20} />
-                    <span>Deposit Funds</span>
+                    <span>Deposit {web3.isConnected ? 'via Blockchain' : '(Simulated)'}</span>
                   </>
                 )}
               </button>
@@ -308,6 +502,17 @@ export default function WalletManager({ darkMode }) {
           {/* Withdraw Tab */}
           {activeTab === 'withdraw' && (
             <form onSubmit={handleWithdraw} className="space-y-4">
+              {/* Web3 Connection Status */}
+              {web3.isWalletAvailable && web3.isConnected && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    ℹ️ Connected wallet: <span className="font-mono">{web3.formatAddress(web3.account)}</span>
+                    <br />
+                    <span className="text-xs">Leave destination address empty to withdraw to your connected wallet.</span>
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className={`block text-sm font-medium ${textColor} mb-2`}>
                   Withdrawal Amount (USDC)
@@ -330,23 +535,43 @@ export default function WalletManager({ darkMode }) {
 
               <div>
                 <label className={`block text-sm font-medium ${textColor} mb-2`}>
-                  Destination Wallet Address (Optional)
+                  Destination Wallet Address {web3.isConnected ? '(Optional)' : '(Required)'}
                 </label>
                 <input
                   type="text"
                   value={destinationAddress}
                   onChange={(e) => setDestinationAddress(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                  placeholder="0x..."
+                  placeholder={web3.isConnected ? `Leave empty to use ${web3.formatAddress(web3.account)}` : "0x..."}
                 />
-              </div>
-
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  <strong>Note:</strong> In production, withdrawals will be sent to your specified USDC wallet address.
-                  For MVP testing, withdrawals are simulated.
+                <p className="text-xs text-gray-500 mt-1">
+                  {web3.isConnected
+                    ? 'Defaults to your connected wallet address if not specified'
+                    : 'Enter a valid Ethereum/Polygon address (0x...)'}
                 </p>
               </div>
+
+              {/* Transaction Hash Display */}
+              {txHash && (
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+                    <strong>Transaction Hash:</strong>
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <code className="text-xs font-mono break-all">{txHash}</code>
+                    {web3.getExplorerUrl(txHash) && (
+                      <a
+                        href={web3.getExplorerUrl(txHash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 text-green-500 hover:text-green-600"
+                      >
+                        <ExternalLink size={16} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"
