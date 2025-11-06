@@ -1,5 +1,4 @@
 # Core Dependencies
-python>=3.9
 
 # HTTP and async
 aiohttp>=3.8.0
