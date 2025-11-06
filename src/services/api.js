@@ -1,7 +1,7 @@
-"""
-GP4U API Client Service
-Handles all HTTP requests to FastAPI backend with JWT authentication
-"""
+/**
+ * GP4U API Client Service
+ * Handles all HTTP requests to FastAPI backend with JWT authentication
+ */
 
 import axios from 'axios';
 
