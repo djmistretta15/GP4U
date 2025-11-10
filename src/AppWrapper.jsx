@@ -10,6 +10,7 @@ import { useToast } from './context/ToastContext';
 import { useTheme } from './context/ThemeContext';
 import { Zap, Home as HomeIcon, Activity, Server, Wallet, TrendingUp, Settings, Menu, X, Sun, Moon } from 'lucide-react';
 import HomePage from './pages/Home';
+import GP4UPlatform from './components/GP4UPlatform';
 import Dashboard from './pages/Dashboard';
 import EnhancedMarketplace from './pages/EnhancedMarketplace';
 import Earnings from './pages/Earnings';
@@ -162,7 +163,7 @@ export default function AppWrapper() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {currentPage === 'home' && <HomePage />}
+  {currentPage === 'home' && <GP4UPlatform />}
         {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'marketplace' && <EnhancedMarketplace onCreateCluster={handleCreateCluster} />}
         {currentPage === 'wallet' && <WalletManager darkMode={darkMode} />}
