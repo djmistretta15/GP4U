@@ -24,8 +24,8 @@ export default function Login() {
     const result = await login(email, password);
 
     if (result.success) {
-      // Navigate to dashboard
-      navigate('/dashboard');
+      // Navigate to home
+      navigate('/home');
     } else {
       setError(result.error);
     }

@@ -19,6 +19,7 @@ import WalletManager from './components/WalletManager';
 import MyReservations from './components/MyReservations';
 import MyClusters from './components/MyClusters';
 import ClusterWizard from './components/ClusterWizard';
+import GPUManagement from './components/GPUManagement';
 
 export default function AppWrapper() {
   const { user, logout } = useAuth();
@@ -47,6 +48,7 @@ export default function AppWrapper() {
     { id: 'home', icon: HomeIcon, label: t.home },
     { id: 'dashboard', icon: Activity, label: t.dashboard },
     { id: 'marketplace', icon: Server, label: t.marketplace },
+    { id: 'gpus', icon: Server, label: 'GPU Ledger' },
     { id: 'wallet', icon: Wallet, label: t.wallet },
     { id: 'earnings', icon: TrendingUp, label: t.earnings },
     { id: 'reservations', icon: Activity, label: t.myReservations },
@@ -166,6 +168,7 @@ export default function AppWrapper() {
   {currentPage === 'home' && <GP4UPlatform />}
         {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'marketplace' && <EnhancedMarketplace onCreateCluster={handleCreateCluster} />}
+        {currentPage === 'gpus' && <GPUManagement darkMode={darkMode} />}
         {currentPage === 'wallet' && <WalletManager darkMode={darkMode} />}
         {currentPage === 'earnings' && <Earnings />}
         {currentPage === 'reservations' && <MyReservations darkMode={darkMode} />}
