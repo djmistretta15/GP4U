@@ -19,7 +19,12 @@ export default function GPUManagement({ darkMode }) {
   const [loading, setLoading] = useState(true);
   const [showAddGPU, setShowAddGPU] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [newGPU, setNewGPU] = useState({ model: '', vram_gb: 24 });
+  const [newGPU, setNewGPU] = useState({ 
+    model: '', 
+    vram_gb: 24,
+    price_per_hour: '',
+    location: ''
+  });
 
   // Theme classes
   const bgColor = darkMode ? 'bg-gray-900' : 'bg-gray-50';
@@ -73,8 +78,21 @@ export default function GPUManagement({ darkMode }) {
   const handleAddGPU = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE}/gpus/?model=${encodeURIComponent(newGPU.model)}&vram_gb=${newGPU.vram_gb}`);
-      setNewGPU({ model: '', vram_gb: 24 });
+      const params = new URLSearchParams({
+        model: newGPU.model,
+        vram_gb: newGPU.vram_gb.toString()
+      });
+      
+      // Add optional params for marketplace integration
+      if (newGPU.price_per_hour) {
+        params.append('price_per_hour', newGPU.price_per_hour);
+      }
+      if (newGPU.location) {
+        params.append('location', newGPU.location);
+      }
+      
+      await axios.post(`${API_BASE}/gpus/?${params.toString()}`);
+      setNewGPU({ model: '', vram_gb: 24, price_per_hour: '', location: '' });
       setShowAddGPU(false);
       loadGPUs();
     } catch (error) {
@@ -308,36 +326,66 @@ export default function GPUManagement({ darkMode }) {
       {/* Add GPU Form */}
       {showAddGPU && (
         <div className={`${cardBg} rounded-lg shadow-sm p-6 mb-6 border ${borderColor}`}>
-          <h2 className={`text-lg font-semibold ${textColor} mb-4`}>Register New GPU</h2>
-          <form onSubmit={handleAddGPU} className="flex gap-4">
-            <div className="flex-1">
-              <label className={`block text-sm font-medium ${textColor} mb-1`}>GPU Model</label>
-              <input
-                type="text"
-                value={newGPU.model}
-                onChange={(e) => setNewGPU({ ...newGPU, model: e.target.value })}
-                placeholder="e.g., RTX 4090"
-                className={`w-full px-4 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${textColor}`}
-                required
-              />
+          <h2 className={`text-lg font-semibold ${textColor} mb-4`}>Register New GPU (Lease Ledger + Marketplace)</h2>
+          <p className={`text-sm ${textSecondary} mb-4`}>Add price and location to enable marketplace arbitrage</p>
+          <form onSubmit={handleAddGPU} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-sm font-medium ${textColor} mb-1`}>GPU Model *</label>
+                <input
+                  type="text"
+                  value={newGPU.model}
+                  onChange={(e) => setNewGPU({ ...newGPU, model: e.target.value })}
+                  placeholder="e.g., RTX 4090"
+                  className={`w-full px-4 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${textColor}`}
+                  required
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${textColor} mb-1`}>VRAM (GB) *</label>
+                <input
+                  type="number"
+                  value={newGPU.vram_gb}
+                  onChange={(e) => setNewGPU({ ...newGPU, vram_gb: parseInt(e.target.value) })}
+                  className={`w-full px-4 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${textColor}`}
+                  required
+                  min="1"
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${textColor} mb-1`}>
+                  Price/Hour (USD)
+                  <span className="text-xs ml-2 text-blue-500">→ Enables Marketplace</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newGPU.price_per_hour}
+                  onChange={(e) => setNewGPU({ ...newGPU, price_per_hour: e.target.value })}
+                  placeholder="e.g., 2.50"
+                  className={`w-full px-4 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${textColor}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${textColor} mb-1`}>
+                  Location
+                  <span className="text-xs ml-2 text-blue-500">→ Enables Arbitrage</span>
+                </label>
+                <input
+                  type="text"
+                  value={newGPU.location}
+                  onChange={(e) => setNewGPU({ ...newGPU, location: e.target.value })}
+                  placeholder="e.g., US-East, EU-West"
+                  className={`w-full px-4 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${textColor}`}
+                />
+              </div>
             </div>
-            <div className="w-48">
-              <label className={`block text-sm font-medium ${textColor} mb-1`}>VRAM (GB)</label>
-              <input
-                type="number"
-                value={newGPU.vram_gb}
-                onChange={(e) => setNewGPU({ ...newGPU, vram_gb: parseInt(e.target.value) })}
-                className={`w-full px-4 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${textColor}`}
-                required
-                min="1"
-              />
-            </div>
-            <div className="flex items-end gap-2">
+            <div className="flex gap-3 pt-2">
               <button
                 type="submit"
                 className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
               >
-                Add GPU
+                Register GPU
               </button>
               <button
                 type="button"
@@ -364,10 +412,13 @@ export default function GPUManagement({ darkMode }) {
                   VRAM
                 </th>
                 <th className={`px-6 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>
+                  Price/Hour
+                </th>
+                <th className={`px-6 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>
                   Status
                 </th>
                 <th className={`px-6 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>
-                  Registered
+                  Location
                 </th>
                 <th className={`px-6 py-3 text-right text-xs font-medium ${textSecondary} uppercase tracking-wider`}>
                   Actions
@@ -377,7 +428,7 @@ export default function GPUManagement({ darkMode }) {
             <tbody className={`divide-y ${borderColor}`}>
               {gpus.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center">
+                  <td colSpan="6" className="px-6 py-12 text-center">
                     <Server className={`mx-auto mb-3 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} size={48} />
                     <p className={textSecondary}>No GPUs registered yet</p>
                     <button
@@ -400,13 +451,25 @@ export default function GPUManagement({ darkMode }) {
                     <td className={`px-6 py-4 whitespace-nowrap ${textSecondary}`}>
                       {gpu.vram_gb} GB
                     </td>
+                    <td className={`px-6 py-4 whitespace-nowrap ${textColor}`}>
+                      {gpu.price_per_hour > 0 ? (
+                        <div className="flex items-center">
+                          <span className="font-medium">${gpu.price_per_hour}</span>
+                          <span className={`ml-1 text-xs px-2 py-0.5 rounded ${darkMode ? 'bg-green-900/20 text-green-400' : 'bg-green-100 text-green-700'}`}>
+                            marketplace
+                          </span>
+                        </div>
+                      ) : (
+                        <span className={textSecondary}>—</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(gpu.status)}`}>
                         {gpu.status || 'unknown'}
                       </span>
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${textSecondary}`}>
-                      {new Date(gpu.created_at).toLocaleDateString()}
+                      {gpu.location || '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button

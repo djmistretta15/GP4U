@@ -239,28 +239,39 @@ async def create_gpu(
     model: str = Query(..., description="GPU model name"),
     vram_gb: int = Query(..., description="VRAM in GB"),
     organization_id: Optional[UUID] = Query(None, description="Organization ID"),
+    price_per_hour: Optional[float] = Query(None, description="Price per hour for marketplace"),
+    location: Optional[str] = Query(None, description="GPU location"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Register a new GPU (MVP)
+    Register a new GPU (Lease Ledger + Marketplace Integration)
+    
+    Creates a GPU in the Lease Ledger with optional marketplace listing.
+    If price is provided, GPU becomes available in the arbitrage engine.
     
     Args:
         model: GPU model name (e.g., "RTX 4090")
         vram_gb: VRAM in GB
         organization_id: Optional organization ID
+        price_per_hour: Price per hour (enables marketplace arbitrage)
+        location: GPU location (e.g., "US-East")
     
     Returns:
         Created GPU
     """
-    # Create GPU
+    # Create GPU with marketplace integration
     gpu = GPU(
         model=model,
         vram_gb=vram_gb,
         organization_id=organization_id,
-        provider="manual",  # Manual registration for MVP
+        provider="lease-ledger",  # Provider name for aggregation
         status=GPUStatus.AVAILABLE,
         available=True,
-        price_per_hour=0  # Default price
+        price_per_hour=price_per_hour or 0,
+        location=location,
+        # Marketplace scoring (if price provided)
+        g_score=0.85 if price_per_hour else None,
+        uptime_percent=99.9 if price_per_hour else None
     )
     
     db.add(gpu)
@@ -274,10 +285,16 @@ async def create_gpu(
         payload_json=json.dumps({
             "model": model,
             "vram_gb": vram_gb,
-            "organization_id": str(organization_id) if organization_id else None
+            "organization_id": str(organization_id) if organization_id else None,
+            "price_per_hour": price_per_hour,
+            "location": location,
+            "marketplace_enabled": bool(price_per_hour)
         })
     )
     db.add(event)
+    await db.commit()
+    
+    return gpu
     await db.commit()
     
     return gpu
