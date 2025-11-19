@@ -45,11 +45,11 @@ class User(UserBase):
 
 # GPU Schemas
 class GPUBase(BaseModel):
-    provider: str
+    provider: Optional[str] = None
     model: str
     vram_gb: int
-    price_per_hour: Decimal
-    location: str
+    price_per_hour: Optional[Decimal] = None
+    location: Optional[str] = None
 
 
 class GPU(GPUBase):
