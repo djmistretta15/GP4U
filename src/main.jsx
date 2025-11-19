@@ -9,6 +9,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AppWrapper from './AppWrapper';
+import GPUs from './pages/GPUs';
+import GPUDetail from './pages/GPUDetail';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -22,6 +24,26 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/auth/login" element={<Login />} />
+
+                {/* MVP GPU Routes */}
+                <Route
+                  path="/dashboard/gpus"
+                  element={
+                    <ProtectedRoute>
+                      <GPUs />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/gpus/:id"
+                  element={
+                    <ProtectedRoute>
+                      <GPUDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/dashboard" element={<Navigate to="/dashboard/gpus" replace />} />
 
                 {/* Protected Routes */}
                 <Route
@@ -33,8 +55,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   }
                 />
 
-                {/* Redirect root to app */}
-                <Route path="/" element={<Navigate to="/home" replace />} />
+                {/* Redirect root to dashboard */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </ThemeProvider>
           </Web3Provider>

@@ -24,8 +24,8 @@ export default function Login() {
     const result = await login(email, password);
 
     if (result.success) {
-      // Navigate to marketplace
-      navigate('/marketplace');
+      // Navigate to dashboard
+      navigate('/dashboard');
     } else {
       setError(result.error);
     }
