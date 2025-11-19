@@ -55,58 +55,25 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
-  # Celery Worker (Background Tasks)
-  worker:
+  # React Frontend
+  web:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: gp4u-worker
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: gp4u-web
+    ports:
+      - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://gp4u:password@db:5432/gp4u
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - VITE_API_URL=http://localhost:8000
     volumes:
-      - ./backend:/app
-    depends_on:
-      - db
-      - redis
-    command: celery -A app.worker worker --loglevel=info
-
-  # Celery Beat (Scheduled Tasks)
-  beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: gp4u-beat
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://gp4u:password@db:5432/gp4u
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - db
-      - redis
-    command: celery -A app.worker beat --loglevel=info
-
-  # React Frontend (will be added later)
-  # web:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: gp4u-web
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - VITE_API_URL=http://localhost:8000
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
-  #   command: npm run dev
+      - ./src:/app/src
+      - ./index.html:/app/index.html
+      - ./vite.config.js:/app/vite.config.js
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+    command: npm run dev -- --host 0.0.0.0 --port 3000
 
 volumes:
   postgres_data:
