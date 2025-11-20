@@ -251,3 +251,19 @@ class ProvenanceEvent(Base):
     # Relationships
     gpu = relationship("GPU", back_populates="provenance_events")
 
+
+class UserFeedback(Base):
+    """User feedback for MVP validation"""
+    __tablename__ = "user_feedback"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    rating = Column(Integer, nullable=False)  # 1-5 stars
+    feature = Column(String(100), nullable=False, index=True)  # search, arbitrage, booking, etc.
+    comment = Column(Text, nullable=True)
+    page = Column(String(255), nullable=True)  # URL/page where feedback was given
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    # Relationships
+    user = relationship("User")
+
