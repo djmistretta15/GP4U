@@ -62,6 +62,23 @@ class TransactionStatus(str, enum.Enum):
     FAILED = "failed"
 
 
+class GPUStatus(str, enum.Enum):
+    """GPU status for lease tracking (MVP)"""
+    AVAILABLE = "available"
+    LEASED = "leased"
+    MAINTENANCE = "maintenance"
+
+
+class ProvenanceEventType(str, enum.Enum):
+    """Provenance event types for blockchain ledger (MVP)"""
+    REGISTERED = "registered"
+    STATUS_CHANGED = "status_changed"
+    LEASED = "leased"
+    RETURNED = "returned"
+    MAINTENANCE_START = "maintenance_start"
+    MAINTENANCE_END = "maintenance_end"
+
+
 # Models
 class User(Base):
     """User accounts"""
@@ -70,6 +87,7 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(Text, nullable=False)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
     skill_level = Column(SQLEnum(SkillLevel), default=SkillLevel.BEGINNER)
     theme_preference = Column(SQLEnum(ThemePreference), default=ThemePreference.PROFESSIONAL)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -79,6 +97,20 @@ class User(Base):
     reservations = relationship("Reservation", back_populates="user")
     clusters = relationship("Cluster", back_populates="user")
     wallet = relationship("Wallet", back_populates="user", uselist=False)
+    organization = relationship("Organization", back_populates="users")
+
+
+class Organization(Base):
+    """Organizations for GPU lease tracking (MVP)"""
+    __tablename__ = "organizations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    users = relationship("User", back_populates="organization")
+    gpus = relationship("GPU", back_populates="organization")
 
 
 class GPU(Base):
@@ -90,6 +122,8 @@ class GPU(Base):
     external_id = Column(String(255), index=True)
     model = Column(String(100), nullable=False, index=True)
     vram_gb = Column(Integer)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
+    status = Column(SQLEnum(GPUStatus), default=GPUStatus.AVAILABLE, index=True, nullable=True)
     price_per_hour = Column(Numeric(10, 2))
     location = Column(String(100))
     available = Column(Boolean, default=True, index=True)
@@ -98,11 +132,14 @@ class GPU(Base):
     benchmark_score = Column(Integer)  # For G-Score calculation
     power_consumption = Column(Integer)  # Watts
     max_power = Column(Integer)  # Max watts
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_synced = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     reservations = relationship("Reservation", back_populates="gpu")
     cluster_members = relationship("ClusterMember", back_populates="gpu")
+    organization = relationship("Organization", back_populates="gpus")
+    provenance_events = relationship("ProvenanceEvent", back_populates="gpu")
 
 
 class Reservation(Base):
@@ -199,3 +236,34 @@ class ArbitrageCache(Base):
     expensive_price = Column(Numeric(10, 2))
     spread_pct = Column(Numeric(5, 2))
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class ProvenanceEvent(Base):
+    """GPU provenance events for blockchain ledger (MVP)"""
+    __tablename__ = "provenance_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    gpu_id = Column(UUID(as_uuid=True), ForeignKey("gpus.id"), nullable=False, index=True)
+    event_type = Column(SQLEnum(ProvenanceEventType), nullable=False, index=True)
+    payload_json = Column(Text, nullable=True)  # JSON string with event details
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    # Relationships
+    gpu = relationship("GPU", back_populates="provenance_events")
+
+
+class UserFeedback(Base):
+    """User feedback for MVP validation"""
+    __tablename__ = "user_feedback"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    rating = Column(Integer, nullable=False)  # 1-5 stars
+    feature = Column(String(100), nullable=False, index=True)  # search, arbitrage, booking, etc.
+    comment = Column(Text, nullable=True)
+    page = Column(String(255), nullable=True)  # URL/page where feedback was given
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    # Relationships
+    user = relationship("User")
+

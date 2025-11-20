@@ -22,8 +22,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/auth/login" element={<Login />} />
 
-                {/* Protected Routes */}
+                {/* Protected Routes - All through AppWrapper */}
                 <Route
                   path="/*"
                   element={
@@ -33,7 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   }
                 />
 
-                {/* Redirect root to app */}
+                {/* Redirect root to home */}
                 <Route path="/" element={<Navigate to="/home" replace />} />
               </Routes>
             </ThemeProvider>

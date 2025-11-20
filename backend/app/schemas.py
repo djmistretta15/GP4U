@@ -9,7 +9,8 @@ from typing import Optional, List
 from uuid import UUID
 from app.models import (
     SkillLevel, ThemePreference, ReservationStatus,
-    ClusterStatus, TransactionType, TransactionStatus
+    ClusterStatus, TransactionType, TransactionStatus,
+    GPUStatus, ProvenanceEventType
 )
 
 
@@ -44,16 +45,19 @@ class User(UserBase):
 
 # GPU Schemas
 class GPUBase(BaseModel):
-    provider: str
+    provider: Optional[str] = None
     model: str
     vram_gb: int
-    price_per_hour: Decimal
-    location: str
+    price_per_hour: Optional[Decimal] = None
+    location: Optional[str] = None
 
 
 class GPU(GPUBase):
     id: UUID
     available: bool
+    organization_id: Optional[UUID] = None
+    status: Optional[str] = None
+    created_at: Optional[datetime] = None
     g_score: Optional[Decimal] = None
     uptime_percent: Optional[Decimal] = None
     last_synced: datetime
@@ -219,3 +223,54 @@ class EarningsHistory(BaseModel):
     date: datetime
     amount: Decimal
     source: str
+
+
+# Organization Schemas (MVP)
+class OrganizationBase(BaseModel):
+    name: str
+
+
+class OrganizationCreate(OrganizationBase):
+    pass
+
+
+class Organization(OrganizationBase):
+    id: UUID
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Provenance Event Schemas (MVP)
+class ProvenanceEventBase(BaseModel):
+    event_type: str
+    payload_json: Optional[str] = None
+
+
+class ProvenanceEventCreate(ProvenanceEventBase):
+    gpu_id: UUID
+
+
+class ProvenanceEvent(ProvenanceEventBase):
+    id: UUID
+    gpu_id: UUID
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# GPU Status Update Schema (MVP)
+class GPUStatusUpdate(BaseModel):
+    status: str  # "available", "leased", or "maintenance"
+
+
+# Blockchain Anchor Schema (MVP)
+class BlockchainAnchorRequest(BaseModel):
+    event_ids: List[UUID]
+
+
+class BlockchainAnchorResponse(BaseModel):
+    hash: str
+    event_count: int
+    timestamp: datetime
+

@@ -10,6 +10,17 @@ GP4U is a full-stack web application that aggregates GPU offerings from multiple
 
 ## 📚 Documentation
 
+### MVP Success Criteria Documentation
+- **[docs/problem-gp4u.md](docs/problem-gp4u.md)** - Problem statement, hypothesis, success metrics
+- **[docs/problem-lease-ledger.md](docs/problem-lease-ledger.md)** - Lease Ledger problem & validation
+- **[docs/api.md](docs/api.md)** - Complete API reference
+- **[docs/architecture.md](docs/architecture.md)** - System architecture & data flows
+- **[docs/limits.md](docs/limits.md)** - Operating limits & constraints
+- **[docs/log_schema.md](docs/log_schema.md)** - Structured logging specification
+- **[docs/todo.md](docs/todo.md)** - Post-MVP roadmap & features
+- **[docs/validation.md](docs/validation.md)** - User validation framework
+
+### Legacy Documentation
 - **[README.md](README.md)** - Project overview and quick start
 - **[STATUS.md](STATUS.md)** - Detailed project status and progress
 - **[PROVIDER_SETUP.md](PROVIDER_SETUP.md)** - Provider configuration and monitoring guide
@@ -146,6 +157,38 @@ npm run dev
 
 # Access at http://localhost:5173
 ```
+
+---
+
+## 🎯 Golden Path Demo (<5 Minutes)
+
+**Want to see the MVP in action? Run the complete demo:**
+
+```bash
+# 1. Start backend
+docker-compose up -d db redis
+cd backend && uvicorn app.main:app --reload &
+
+# 2. Seed demo data
+python3 scripts/seed_demo_data.py
+
+# 3. Run complete demo (both MVPs)
+./scripts/demo-complete.sh
+```
+
+**This demonstrates:**
+- ✅ **GP4U Core**: Search → Arbitrage → Booking (saves 20-40%)
+- ✅ **Lease Ledger**: Register → Track → Blockchain anchor
+
+**Or run individual demos:**
+```bash
+./scripts/demo-golden-path.sh      # GP4U arbitrage demo
+./scripts/demo-lease-ledger.sh     # Provenance tracking demo
+```
+
+**Demo credentials:**
+- User: `demo@gp4u.com` / `demo123`
+- Admin: `admin@gp4u.com` / `admin123`
 
 ---
 

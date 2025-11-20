@@ -103,7 +103,7 @@ async def root():
 
 
 # Include API routers
-from app.api import auth, gpus, arbitrage, providers, reservations, clusters, wallets
+from app.api import auth, gpus, arbitrage, providers, reservations, clusters, wallets, anchors, feedback
 from app.api.v1 import provider_health
 
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Authentication"])
@@ -113,6 +113,8 @@ app.include_router(providers.router, prefix=f"{settings.API_V1_PREFIX}/providers
 app.include_router(reservations.router, prefix=f"{settings.API_V1_PREFIX}/reservations", tags=["Reservations"])
 app.include_router(clusters.router, prefix=f"{settings.API_V1_PREFIX}/clusters", tags=["Clusters"])
 app.include_router(wallets.router, prefix=f"{settings.API_V1_PREFIX}/wallets", tags=["Wallets"])
+app.include_router(anchors.router, prefix=f"{settings.API_V1_PREFIX}/anchors", tags=["Blockchain Anchors"])
+app.include_router(feedback.router, prefix=f"{settings.API_V1_PREFIX}/feedback", tags=["User Feedback"])
 app.include_router(provider_health.router, prefix=f"{settings.API_V1_PREFIX}/provider-health", tags=["Provider Health"])
 
 
